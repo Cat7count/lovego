@@ -1,0 +1,61 @@
+服务端：
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"net"
+	"os"
+)
+func main(){
+	conn,err:=net.Dial("tcp","10.17.93.91:8888")
+	if err !=nil{
+		fmt.Println("client dial err=",err)
+		return
+	}
+	fmt.Println("连接成功")
+	//功能:客户端发送单行数据，然后退出
+	reader:=bufio.NewReader(os.Stdin)//标准输入到终端
+	//从终端读取一行用户的输入，并发送给服务器
+	line,err:=reader.ReadString('\n')
+	if err!=nil{
+		fmt.Println("readString err=",err)
+	}
+	//再将line发送给服务器
+	n,err:=conn.Write([]byte(line))
+	if err!=nil{
+		fmt.Println("conn.Write err=",err)
+	}
+	fmt.Printf("客户端发送了%v字节的数据\n",n)
+}
+客户端：
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"net"
+	"os"
+)
+func main(){
+	conn,err:=net.Dial("tcp","10.17.93.91:8888")
+	if err !=nil{
+		fmt.Println("client dial err=",err)
+		return
+	}
+	fmt.Println("连接成功")
+	//功能:客户端发送单行数据，然后退出
+	reader:=bufio.NewReader(os.Stdin)//标准输入到终端
+	//从终端读取一行用户的输入，并发送给服务器
+	line,err:=reader.ReadString('\n')
+	if err!=nil{
+		fmt.Println("readString err=",err)
+	}
+	//再将line发送给服务器
+	n,err:=conn.Write([]byte(line))
+	if err!=nil{
+		fmt.Println("conn.Write err=",err)
+	}
+	fmt.Printf("客户端发送了%v字节的数据\n",n)
+}
+那个gin框架内容太多了，现在只搞到了这QAQ。
