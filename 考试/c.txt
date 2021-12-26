@@ -1,0 +1,17 @@
+package main
+import(
+	"fmt"
+)
+func fuck(judgechan chan int){
+	fmt.Println("我爱伊莉雅么么么么么么么么么")
+	judgechan<-1
+}
+func main(){
+	judgechan:=make(chan int,10)
+	for i:=0;i<10;i++{
+		go fuck(judgechan)
+	}
+	for i:=0;i<10;i++{
+		<-judgechan
+	}
+}

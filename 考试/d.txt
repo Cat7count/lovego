@@ -1,0 +1,47 @@
+package main
+import(
+	"fmt"
+)
+func cun(intchan chan int){
+	for i:=0;i<1000000;i++{
+		intchan<-i
+	}
+	close(intchan)
+}
+func fuck(intchan chan int,primechan chan int,exitchan chan int){
+	var i int
+	for{
+		num,ok:=<-intchan
+		if !ok{
+			break
+		}
+		for i=2;i<num;i++{
+			if num%i==0{
+				break
+			}
+		}
+		if i==num{
+			primechan<-num
+		}
+	}
+	exitchan<-1
+}
+func main(){
+	intchan:=make(chan int,1000000)
+	primechan:=make(chan int,1000000)
+	exitchan:=make(chan int,100000)
+	go cun(intchan)
+	for i:=0;i<100000;i++{
+		go fuck(intchan,primechan,exitchan)
+	}
+	for i:=0;i<100000;i++{
+		<-exitchan
+	}
+	for{
+		num,ok:=<-primechan
+		if !ok{
+			break
+		}
+		fmt.Printf("素数有%d\n",num)
+	}
+}

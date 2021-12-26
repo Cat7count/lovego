@@ -1,0 +1,18 @@
+package main
+
+import(
+	"fmt"
+)
+func main(){
+	cunchan:=make(chan int ,10)
+	go func(){
+		fmt.Println("下山的路又堵起了")
+		for i:=0;i<4000;i++{
+			cunchan<-i
+		}//协程中存
+	}()
+	for i:=0;i<4000;i++{
+		<-cunchan
+	}
+	close(cunchan)
+}
