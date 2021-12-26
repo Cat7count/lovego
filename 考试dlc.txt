@@ -1,0 +1,145 @@
+package main
+import(
+	"database/sql"
+	"fmt"
+	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
+	"strings"
+)
+const (
+	userName = "用户名"
+	password = "密码"
+	ip = "ip地址"
+	port = "端口"
+	dbName = "数据库名"
+)
+type User struct {
+	id int //id
+	username string //用户名
+	password string //密码
+}
+var DB *sql.DB//一个全局的db
+func userLogin(c *gin.Context) {
+	userName := c.Request.URL.Query().Get("username") //获取登录用户名
+	passWord := c.Request.URL.Query().Get("password") //获取登录密码
+	//查询列表
+	rows,err := DB.Query("select * from user ") //执行sql语句查询表中数据
+	if err != nil {
+		fmt.Println("查询失败")
+	}
+	var s User
+	for rows.Next() {
+		err = rows.Scan(&s.id, &s.username, &s.password)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	if userName != s.username {
+		// 无此用户(用户名不存在)
+		c.JSON(200,gin.H{
+			"success":false,
+			"code":400,
+			"msg":"无此用户",
+		})
+	} else {
+		// 获取当前用户名密码
+		// 获取登录用户名的密码 查询是否匹配
+		us,_ := DB.Query("select password from user where username='" + userName + "'")
+		for us.Next(){
+			var u User
+			err = us.Scan(&u.password)
+			if err != nil {
+				fmt.Println(err)
+			}
+			if passWord != u.password{ //密码不一致
+				c.JSON(200,gin.H{
+					"success":false,
+					"code":400,
+					"msg":"密码错误",
+				})
+			} else {
+				c.JSON(200,gin.H{ //用户名存在且密码匹配
+					"success":true,
+					"code":200,
+					"msg":"登录成功",
+				})
+			}
+		}
+	}
+	rows.Close()
+}
+func userRegister(c *gin.Context){
+	userName := c.Request.URL.Query().Get("username") //通过template得到注册用户名
+	passWord := c.Request.URL.Query().Get("password") //同上
+	rows,err := DB.Query("select * from user") //查询用户名是否已存在
+	if err != nil {
+		fmt.Println("查询失败")
+	}
+	//遍历
+	for rows.Next() {
+		var s User
+		err = rows.Scan(&s.id,&s.username,&s.password)
+		if err != nil{
+			fmt.Println(err)
+		}
+		fmt.Println(s.username)
+		if userName != s.username{
+			// 执行插入
+			result, err := DB.Exec("insert into user(username,password)values (?,?)",userName,passWord)//通过占位符获取数据
+			if err != nil {
+				fmt.Println("执行失败")
+				return
+			} else {
+				rows,_ := result.RowsAffected() //输出执行的行数
+				if rows != 1 { //不为1 表示插入失败(注册失败)
+					c.JSON(200,gin.H{
+						"success":false,
+					})
+				} else {
+					c.JSON(200,gin.H{ //注册成功
+						"success":true,
+						"username":userName,
+					})
+				}
+			}
+		} else {
+			fmt.Println("用户名已被注册") //用户名已存在(注册失败 用户名已被注册)
+			c.JSON(200,gin.H{
+				"code":400,
+				"success":false,
+				"msg":"用户名已被注册",
+			})
+		}
+	}
+	rows.Close()
+}
+// 连接数据库
+func initDB() {
+	path := strings.Join([]string{userName, ":", password, "@tcp(",ip, ":", port, ")/", dbName, "?charset=utf8"}, "")
+	DB,_ = sql.Open("mysql",path)
+	DB.SetConnMaxLifetime(100)
+	// 设置数据库最大闲置数
+	DB.SetMaxIdleConns(10)
+	// 验证
+	if err := DB.Ping(); err != nil {
+		fmt.Println("连接数据库失败")
+		return
+	}
+	fmt.Println("连接数据库成功")
+}
+func main(){
+	initDB()
+	router := gin.Default()//创建默认路由
+	user := router.Group("/user")//路由器的分组
+	{
+		user.POST("/login",userLogin)
+		user.POST("/register",userRegister)
+	}
+	router.Run(":9000")//端口号
+}
+数据库的代码
+creat table user(
+id int primary key auto_increment//自增
+username varchar(255)
+password varchar(255)
+);
